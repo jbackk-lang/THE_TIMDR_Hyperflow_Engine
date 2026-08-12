@@ -67,6 +67,40 @@ class TestStraightLineNoDivByZero(unittest.TestCase):
         self.assertEqual(res["helical"], 0.0)
 
 
+class TestNoiseAmplificationOnNearStraightPath(unittest.TestCase):
+    """
+    Regression test dla bledu znalezionego w pseudokodzie
+    THE_GEO_PRO_4D_Radar: warunek `if cross_norm == 0` (lub nawet stala
+    tolerancja typu < 1e-12) chroni tylko przed dzieleniem przez
+    doslowne zero, nie przed wzmacnianiem szumu gdy sciezka jest niemal
+    (ale nie dokladnie) prosta -- wtedy stary kod dawal tau rzedu 1e6
+    zamiast ~0. Ten test gwarantuje, ze bramkowanie na podstawie kappa
+    (nie cross_norm) faktycznie to naprawia.
+    """
+
+    def test_near_straight_noisy_direction_gives_zero_torsion(self):
+        p_t3 = (0.0, 0.0, 0.0)
+        p_t2 = (1.0, 0.0, 0.0)
+        p_t1 = (2.0, 0.0, 0.0)
+        # male odchylenie w a (rzedu 1e-6) -- typowy szum kierunku,
+        # nie dokladna linia prosta
+        p_t = (3.0, 1e-6, 0.0)
+        res = THE_GEO_PRO_4D(p_t, p_t1, p_t2, p_t3, min_speed=0.0)
+        self.assertFalse(res["gated"])
+        # ze starym warunkiem (cross_norm == 0) tau wychodzilo rzedu 1e6
+        self.assertLess(abs(res["torsion"]), 1e-6)
+
+    def test_real_helix_torsion_unaffected_by_curvature_gate(self):
+        # upewnij sie, ze bramkowanie na kappa nie psuje prawdziwej,
+        # dobrze zakrzywionej trajektorii (kappa=0.192 >> domyslny prog)
+        r, c = 5.0, 1.0
+        pts = [helix_point(2.0 + k * 0.02, r, c) for k in range(4)]
+        p_t3, p_t2, p_t1, p_t = pts
+        res = THE_GEO_PRO_4D(p_t, p_t1, p_t2, p_t3, min_speed=0.0)
+        kappa_true, tau_true = analytical_kappa_tau(r, c)
+        self.assertAlmostEqual(res["torsion"], tau_true, delta=0.001)
+
+
 class TestMinSpeedGating(unittest.TestCase):
     def test_gated_when_below_min_speed(self):
         pts = [(0.0, 0.0, 0.0)] * 4
