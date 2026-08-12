@@ -116,3 +116,125 @@ To jest pełny THE w 12 liniach pseudokodu.
 
 🧠 Najprostsza definicja THE kodu
 THE kod to cztery klasy (strumień, topologia, przepływ, stabilność) połączone w pętlę percepcyjną, która działa szybciej niż wieloprocesorowy system, bo nie używa CPU — tylko przepływu informacji.
+##
+🔧 1. Delta geometryczna (pełna różniczka)
+Kod
+class DeltaGeo:
+    def compute(p_t, p_t1):
+        dx = p_t.x - p_t1.x
+        dy = p_t.y - p_t1.y
+        dz = p_t.z - p_t1.z
+        return (dx, dy, dz)
+🌀 2. Gradient + kierunek
+Kod
+class GradientDir:
+    def gradient(dx, dy, dz):
+        return sqrt(dx*dx + dy*dy + dz*dz)
+
+    def direction(dx, dy, dz, G):
+        if G == 0: return (0,0,0)
+        return (dx/G, dy/G, dz/G)
+🔄 3. Krzywizna (curvature)
+Zmiana kierunku między dwoma krokami.
+
+Kod
+class Curvature:
+    def compute(D_t, D_t1, G):
+        diff = norm(D_t - D_t1)
+        return diff / G
+🧬 4. Skręt (torsion)
+Zmiana płaszczyzny ruchu.
+
+Kod
+class Torsion:
+    def compute(D_t2, D_t1, D_t, G):
+        cross_vec = cross(D_t2, D_t1)
+        return dot(cross_vec, D_t) / (G*G)
+🌀 5. Helikalność (spiralność)
+Połączenie krzywizny i skrętu.
+
+Kod
+class Helical:
+    def compute(kappa, tau):
+        return sqrt(kappa*kappa + tau*tau)
+📈 6. Przepływ geometryczny PRO
+Kod
+class FlowGeo:
+    def compute(D, G, kappa, tau):
+        return {
+            "dir": D,
+            "vel": G,
+            "curv": kappa,
+            "tors": tau
+        }
+🧩 7. Stabilność geometryczna PRO
+Kod
+class StabilityGeo:
+    def dir_stab(D_t, D_t1):
+        return dot(D_t, D_t1)
+
+    def curv_stab(kappa):
+        return 1 / (1 + kappa)
+
+    def tors_stab(tau):
+        return 1 / (1 + abs(tau))
+
+    def helix_stab(H):
+        return 1 / (1 + H)
+
+    def total(Dstab, Ck, Ct, Ch):
+        return Dstab * Ck * Ct * Ch
+🔥 8. THE‑GEO PRO — główna pętla percepcyjna
+To jest cały THE‑GEO PRO w jednym bloku — minimalny, czysty, kompletny.
+
+Kod
+def THE_GEO_PRO(p_t, p_t1, p_t2):
+
+    # delta
+    dx, dy, dz = DeltaGeo.compute(p_t, p_t1)
+
+    # gradient + kierunek
+    G = GradientDir.gradient(dx, dy, dz)
+    D_t = GradientDir.direction(dx, dy, dz, G)
+
+    # poprzednie kierunki
+    dx1, dy1, dz1 = DeltaGeo.compute(p_t1, p_t2)
+    G1 = GradientDir.gradient(dx1, dy1, dz1)
+    D_t1 = GradientDir.direction(dx1, dy1, dz1, G1)
+
+    # krzywizna
+    kappa = Curvature.compute(D_t, D_t1, G)
+
+    # skręt
+    # potrzebujemy jeszcze D_t2 (kierunek sprzed dwóch kroków)
+    # zakładamy, że p_t2 jest dostępne
+    dx2, dy2, dz2 = DeltaGeo.compute(p_t2, p_t1)  # poprzednia delta
+    G2 = GradientDir.gradient(dx2, dy2, dz2)
+    D_t2 = GradientDir.direction(dx2, dy2, dz2, G2)
+
+    tau = Torsion.compute(D_t2, D_t1, D_t, G)
+
+    # helikalność
+    H = Helical.compute(kappa, tau)
+
+    # przepływ
+    F = FlowGeo.compute(D_t, G, kappa, tau)
+
+    # stabilność
+    Dstab = StabilityGeo.dir_stab(D_t, D_t1)
+    Ck = StabilityGeo.curv_stab(kappa)
+    Ct = StabilityGeo.tors_stab(tau)
+    Ch = StabilityGeo.helix_stab(H)
+    C = StabilityGeo.total(Dstab, Ck, Ct, Ch)
+
+    return {
+        "delta": (dx, dy, dz),
+        "gradient": G,
+        "direction": D_t,
+        "curvature": kappa,
+        "torsion": tau,
+        "helical": H,
+        "flow": F,
+        "stability": C
+    }
+To jest pełny THE‑GEO PRO kod, gotowy do implementacji w dowolnym języku.
