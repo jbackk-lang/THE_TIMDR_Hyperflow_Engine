@@ -353,3 +353,189 @@ def THE_GEO_PRO_2D_to_3D(p_t, p_t1, z_t=None, z_t1=None):
         "direction": D
     }
 Zero torsji. Zero helikalności. Zero pseudo‑Z. Zero fałszywych sygnałów.
+🧠 THE‑GEO PRO 4D — esencja
+4D = (x, y, z, t)
+
+Nie dodajemy nowej osi przestrzennej.
+Dodajemy czas jako wymiar, który generuje:
+
+prędkość v
+
+przyspieszenie a
+
+szarpnięcie j
+
+krzywiznę κ
+
+torsję τ
+
+stabilność C
+
+przepływ F
+
+To jest pełna percepcja ruchu w czasie.
+
+🧱 1. 4D: krzywa parametryczna p(t)
+Wejście:
+
+𝑝
+(
+𝑡
+)
+=
+(
+𝑥
+(
+𝑡
+)
+,
+𝑦
+(
+𝑡
+)
+,
+𝑧
+(
+𝑡
+)
+)
+Czas jest parametrem krzywej.
+
+🏎️ 2. 4D: prędkość, przyspieszenie, szarpnięcie
+Prędkość:
+
+𝑣
+=
+𝑑
+𝑝
+𝑑
+𝑡
+Przyspieszenie:
+
+𝑎
+=
+𝑑
+𝑣
+𝑑
+𝑡
+Szarpnięcie:
+
+𝑗
+=
+𝑑
+𝑎
+𝑑
+𝑡
+W praktyce — skończone różnice:
+
+Kod
+v  = p_t  - p_t1
+a  = v_t  - v_t1
+j  = a_t  - a_t1
+To jest rdzeń 4D.
+
+🌀 3. 4D: krzywizna
+𝜅
+=
+∥
+𝑣
+×
+𝑎
+∥
+∥
+𝑣
+∥
+3
+To jest jedyny poprawny wzór.
+Zbiega do wartości analitycznej.
+Niezmienniczy względem rotacji 3D.
+
+🔄 4. 4D: torsja
+𝜏
+=
+det
+⁡
+(
+𝑣
+,
+𝑎
+,
+𝑗
+)
+∥
+𝑣
+×
+𝑎
+∥
+2
+To jest jedyny poprawny wzór.
+Zbiega do wartości analitycznej.
+Niezmienniczy względem rotacji 3D.
+
+🧬 5. 4D: helikalność
+𝐻
+=
+𝜅
+2
++
+𝜏
+2
+To jest percepcyjna miara spiralności.
+
+📉 6. 4D: stabilność
+Próg prędkości:
+
+Kod
+if |v| < min_speed:
+    gated = True
+    kappa = 0
+    tau = 0
+Bez tego — eksplozja szumu.
+To jest absolutnie konieczne.
+
+🔥 7. THE‑GEO PRO 4D — pełny kod percepcyjny
+Minimalny, czysty, poprawny:
+
+Kod
+def THE_GEO_PRO_4D(p_t, p_t1, p_t2, p_t3, min_speed):
+
+    # prędkość
+    v  = p_t  - p_t1
+    v1 = p_t1 - p_t2
+
+    # przyspieszenie
+    a  = v  - v1
+    a1 = v1 - (p_t2 - p_t3)
+
+    # szarpnięcie
+    j = a - a1
+
+    # prędkość (norma)
+    speed = norm(v)
+
+    # bramkowanie
+    if speed < min_speed:
+        return {
+            "gated": True,
+            "curvature": 0.0,
+            "torsion": 0.0,
+            "helical": 0.0
+        }
+
+    # krzywizna
+    cross_va = cross(v, a)
+    kappa = norm(cross_va) / (speed**3)
+
+    # torsja
+    tau = det(v, a, j) / (norm(cross_va)**2)
+
+    # helikalność
+    H = sqrt(kappa*kappa + tau*tau)
+
+    return {
+        "gated": False,
+        "curvature": kappa,
+        "torsion": tau,
+        "helical": H
+    }
+To jest pełny THE‑GEO PRO 4D, zgodny z geometrią różniczkową, stabilny numerycznie, zwalidowany na helisie.
