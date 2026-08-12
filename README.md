@@ -196,21 +196,40 @@ Błąd maleje monotonicznie do ~0 — wzór faktycznie zbiega do prawdziwej
 krzywizny i skrętu.
 
 **Implementacja**: [`the_geo_pro_4d.py`](the_geo_pro_4d.py) —
-prawdziwy, uruchamialny kod Python (nie pseudokod), plus jedna poprawka
-względem oryginalnego pseudokodu: zabezpieczenie przed dzieleniem przez
-zero, gdy `v` i `a` są równoległe (linia prosta) — wtedy `κ=τ=0` zamiast
-błędu/NaN.
+prawdziwy, uruchamialny kod Python (nie pseudokod).
+
+### Druga poprawka: bramkowanie oparte na cross_norm==0 nie wystarcza
+
+Wersja pseudokodu nadesłana później pod nazwą `THE_GEO_PRO_4D_Radar`
+zabezpieczała dzielenie przez `if cross_norm == 0`. To chroni tylko
+przed dosłownym zerem/NaN — **nie** chroni przed wzmocnieniem szumu, gdy
+trajektoria jest niemal (ale nie dokładnie) prosta:
+
+```
+v = (1, 0, 0);  a = (1, 1e-6, 0)   # typowy szum kierunku na "prostym" odcinku
+cross_norm = 1e-6   # != 0, więc stary warunek przepuszcza dalej
+tau = dot(cross_va, j) / cross_norm**2  →  rzędu 1e6 zamiast ~0
+```
+
+Ten sam wzorzec błędu co przy `min_speed`/`min_step_m` (dzielenie przez
+małą wartość wzmacnia szum), tylko na innym mianowniku. Poprawka:
+bramkowanie torsji na podstawie krzywizny `kappa` (już obliczonej,
+fizycznie sensownej wielkości), nie na `cross_norm` wprost —
+`if kappa < min_curvature: tau = 0`. Domyślne `min_curvature=1e-4` to
+punkt startowy, nie zwalidowana stała — jak `min_step_m` czy
+`min_speed`, wymaga kalibracji na realnych zaszumionych danych 3D, gdy
+się pojawią.
 
 **Testy**: [`tests/test_the_geo_pro_4d.py`](tests/test_the_geo_pro_4d.py)
-— 6 testów: zbieżność do wartości analitycznej, brak dzielenia przez
-zero na linii prostej, bramkowanie `min_speed` (zapobiega wzmacnianiu
-szumu GPS/sensora przy postoju), niezmienniczość na obrót 3D wokół
-dowolnej osi (wzór Rodriguesa). Wszystkie przechodzą:
+— 8 testów: zbieżność do wartości analitycznej, brak dzielenia przez
+zero na linii prostej, bramkowanie `min_speed`, regresja na wzmacnianie
+szumu przy niemal-prostej trajektorii (opisana wyżej), niezmienniczość
+na obrót 3D wokół dowolnej osi (wzór Rodriguesa). Wszystkie przechodzą:
 
 ```
 $ python3 -m unittest discover -s tests -v
 ...
-Ran 6 tests in 0.005s
+Ran 8 tests in 0.020s
 OK
 ```
 

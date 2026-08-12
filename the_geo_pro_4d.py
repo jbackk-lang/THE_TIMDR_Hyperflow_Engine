@@ -32,10 +32,23 @@ Kontekst / historia poprawek — patrz README.md, sekcja
      oryginalnym pseudokodem THE-GEO PRO 4D i dodatkowo liczy
      "helical".
 
-  4. Poprawka wzgledem pseudokodu uzytkownika: dodano zabezpieczenie
-     przed dzieleniem przez zero, gdy v i a sa rownolegle (linia
-     prosta) -- wtedy cross_norm ~ 0, wiec kappa = tau = 0 zamiast
-     ZeroDivisionError / NaN.
+  4. Poprawka wzgledem pseudokodu uzytkownika (wariant
+     "THE_GEO_PRO_4D_Radar"): zabezpieczenie `if cross_norm == 0` (lub
+     nawet stala tolerancja typu `< 1e-12`) chroni TYLKO przed dzieleniem
+     przez doslowne zero / NaN -- NIE chroni przed wzmacnianiem szumu,
+     gdy trajektoria jest niemal (ale nie dokladnie) prosta. Przyklad:
+     v=(1,0,0), a=(1,1e-6,0) (typowy szum kierunku na "prostym" odcinku)
+     daje cross_norm=1e-6 -- nie zero, wiec stary warunek przepuszcza
+     dalej, a tau = dot(cross_va,j)/cross_norm**2 wychodzi rzedu 1e6
+     zamiast ~0. To ten sam wzorzec bledu co przy min_speed / min_step_m
+     (dzielenie przez mala wartosc wzmacnia szum), tylko na innym
+     mianowniku (cross_norm**2 zamiast |v|).
+     Poprawka: bramkowanie torsji na podstawie samej krzywizny kappa
+     (juz obliczonej, fizycznie sensownej wielkosci), nie na cross_norm:
+     jesli kappa < min_curvature -> tau = 0. Domyslna wartosc
+     min_curvature=1e-4 jest punktem startowym, NIE zwalidowana stala --
+     wymaga kalibracji na realnych, zaszumionych danych 3D, analogicznie
+     do min_step_m=3.0 skalibrowanego dla RADAR-TRACKING-TIMDR w 2D.
 
 Wejscie: p_t, p_t1, p_t2, p_t3 -- krotki (x, y, z). p_t = pozycja
 najnowsza, p_t3 = pozycja sprzed 3 krokow (najstarsza).
@@ -47,6 +60,7 @@ from typing import Dict, Tuple
 Point3 = Tuple[float, float, float]
 
 DEFAULT_MIN_SPEED = 1.0
+DEFAULT_MIN_CURVATURE = 1e-4
 
 
 def _sub(a: Point3, b: Point3) -> Point3:
@@ -75,6 +89,7 @@ def THE_GEO_PRO_4D(
     p_t2: Point3,
     p_t3: Point3,
     min_speed: float = DEFAULT_MIN_SPEED,
+    min_curvature: float = DEFAULT_MIN_CURVATURE,
 ) -> Dict[str, float]:
     """Krzywizna, skret i helikalnosc trajektorii 3D sparametryzowanej czasem.
 
@@ -95,13 +110,15 @@ def THE_GEO_PRO_4D(
 
     cross_va = _cross(v, a)
     cross_norm = _norm(cross_va)
+    kappa = cross_norm / speed ** 3
 
-    if cross_norm < 1e-12:
-        # v i a rownolegle (linia prosta) -- krzywizna 0, skret nieokreslony -> 0
-        kappa = 0.0
+    if kappa < min_curvature:
+        # trajektoria (niemal) prostoliniowa -- torsja niezdefiniowana /
+        # zdominowana przez szum przy dzieleniu przez cross_norm**2,
+        # bramkujemy na podstawie kappa, nie samego cross_norm==0
+        # (patrz docstring modulu, punkt 4)
         tau = 0.0
     else:
-        kappa = cross_norm / speed ** 3
         tau = _dot(cross_va, j) / cross_norm ** 2
 
     H = math.sqrt(kappa * kappa + tau * tau)
