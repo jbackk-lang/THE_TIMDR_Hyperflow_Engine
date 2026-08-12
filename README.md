@@ -1,13 +1,23 @@
 # THE
 TIMDR Hyperflow Engine (THE)
+
 🧠 THE — rdzeń kodowy (pseudokod)
-To jest minimalna, działająca struktura THE.
+
+To jest minimalna, koncepcyjna struktura THE. Sekcje 1-7 poniżej to
+**język/metafora**, nie zwalidowany numerycznie kod — nie ma tu wielkości
+fizycznych do sprawdzenia względem wartości analitycznej, więc nie były
+testowane w ten sposób. Sekcja "THE-GEO PRO" niżej jest inna: opisuje
+konkretne wielkości geometryczne (krzywizna, skręt trajektorii), które
+*da się* sprawdzić względem wartości analitycznych — i po sprawdzeniu
+okazało się, że oryginalny wzór na skręt był błędny. Historia tej
+poprawki jest opisana w sekcji "THE-GEO PRO → THE-GEO PRO 4D" niżej.
+
 Nie jest to implementacja w żadnym języku — to jest język THE.
 
-1. Strumień (S‑Layer)
+## 1. Strumień (S-Layer)
 Strumień nie przechowuje wartości — tylko zmianę.
 
-Kod
+```
 class Strumien:
     zmiana = 0
 
@@ -19,12 +29,13 @@ class Strumien:
 
     def pulse():
         return abs(zmiana)
+```
 To jest odpowiednik „procesora”, ale bez CPU.
 
-2. Topologia (T‑Layer)
+## 2. Topologia (T-Layer)
 Topologia nie jest grafem danych — jest grafem przepływu.
 
-Kod
+```
 class Topologia:
     wezly = []
     krawedzie = []
@@ -34,12 +45,13 @@ class Topologia:
 
     def reshape():
         reorganizuj_polaczenia(wezly, krawedzie)
+```
 To jest odpowiednik „kolejek”, ale bez kolejek.
 
-3. Przepływ (F‑Layer)
+## 3. Przepływ (F-Layer)
 Przepływ nie jest schedulerem — jest kierunkiem zmiany.
 
-Kod
+```
 class Przeplyw:
     def direction(zmiana):
         if zmiana > 0: return "UP"
@@ -51,12 +63,13 @@ class Przeplyw:
 
     def reorganize():
         dostosuj_kierunki()
+```
 To jest odpowiednik „schedulerów”, ale bez schedulerów.
 
-4. Stabilność (C‑Layer)
+## 4. Stabilność (C-Layer)
 Stabilność nie jest kontrolą błędów — jest filtracją percepcji.
 
-Kod
+```
 class Stabilnosc:
     def signal(zmiana):
         return abs(zmiana) < prog
@@ -66,27 +79,25 @@ class Stabilnosc:
 
     def coherence(strumien):
         return strumien.gradient() < limit
+```
 To jest odpowiednik „kontroli błędów”, ale bez błędów.
 
-🔥 5. THE Hyperflow Loop — główna pętla percepcyjna
-To jest serce THE.
-Zamiast CPU → scheduler → proces → wątek → blokada → kolejka
-masz:
-
+## 🔥 5. THE Hyperflow Loop — główna pętla percepcyjna
+Zamiast CPU → scheduler → proces → wątek → blokada → kolejka, masz:
 strumień → topologia → przepływ → stabilność
 
-Kod
+```
 while True:
     S.update(dane)
     T.reshape()
     F.reorganize()
     C.coherence(S)
+```
 To jest pętla percepcyjna, nie obliczeniowa.
 
-🧬 6. THE — przepływ helikalny (opcjonalny moduł)
-Helisa jest najstabilniejszym przepływem THE.
+## 🧬 6. THE — przepływ helikalny (opcjonalny moduł)
 
-Kod
+```
 class HelikalnyPrzeplyw:
     def cycle(zmiana):
         return sin(zmiana)
@@ -96,12 +107,12 @@ class HelikalnyPrzeplyw:
 
     def combine():
         return cycle(zmiana) + linear(zmiana)
+```
 To jest pipeline bez pipeline.
 
-🚀 7. THE — minimalny system
-To jest najkrótsza możliwa implementacja THE:
+## 🚀 7. THE — minimalny system
 
-Kod
+```
 S = Strumien()
 T = Topologia()
 F = Przeplyw()
@@ -112,21 +123,130 @@ while True:
     T.reshape()
     F.reorganize()
     C.coherence(S)
+```
 To jest pełny THE w 12 liniach pseudokodu.
 
-🧠 Najprostsza definicja THE kodu
-THE kod to cztery klasy (strumień, topologia, przepływ, stabilność) połączone w pętlę percepcyjną, która działa szybciej niż wieloprocesorowy system, bo nie używa CPU — tylko przepływu informacji.
-##
-🔧 1. Delta geometryczna (pełna różniczka)
-Kod
+🧠 **Najprostsza definicja THE kodu**: cztery klasy (strumień, topologia,
+przepływ, stabilność) połączone w pętlę percepcyjną.
+
+---
+
+## THE-GEO PRO → THE-GEO PRO 4D: historia walidacji
+
+Poniższe sekcje dotyczą jednej konkretnej, mierzalnej wielkości:
+geometrii trajektorii punktu w przestrzeni (kierunek, krzywizna, skręt).
+W przeciwieństwie do sekcji 1-7 wyżej, te wzory dają się sprawdzić —
+istnieje krzywa analityczna (helisa) o znanej, dokładnej krzywiźnie i
+skręcie, więc każdą proponowaną formułę można porównać z prawdziwą
+wartością.
+
+### Oryginalny wzór (poniżej, sekcja "THE-GEO PRO") — sprawdzony i odrzucony
+
+Oryginalna `Torsion.compute` liczyła skręt z różnic **kierunków
+jednostkowych** `D_t2, D_t1, D_t` (patrz kod niżej). Sprawdzone na
+czystej, bezszumowej helisie analitycznej `x=r·cos(t), y=r·sin(t), z=c·t`
+(r=5, c=1, prawdziwe τ=0.038462):
+
+| dt | τ (stary wzór) | błąd |
+|---|---|---|
+| 0.5 | 0.003507 | 90.9% |
+| 0.1 | 0.000724 | 98.1% |
+| 0.02 | 0.000145 | 99.6% |
+| 0.01 | 0.000073 | 99.8% |
+| 0.005 | 0.000036 | 99.9% |
+
+Błąd **rośnie** w stronę 100% zamiast maleć do zera przy zagęszczaniu
+próbkowania — to znaczy, że wzór nie zbiega do prawdziwego skrętu, tylko
+do zera. Wzór jest błędny niezależnie od tego, jak gęste są dane.
+
+### Poprawiony wzór — THE-GEO PRO 4D
+
+Zamiast różnic kierunków jednostkowych, poprawna wersja liczy krzywiznę
+i skręt z pochodnych **prędkości / przyspieszenia / szarpnięcia**
+(v, a, j — różnice skończone z 4 kolejnych punktów, gdzie t = parametr
+czasowy krzywej, stąd "4D" = x,y,z,t):
+
+```
+v  = p_t  - p_t1
+v1 = p_t1 - p_t2
+a  = v - v1
+a1 = v1 - (p_t2 - p_t3)
+j  = a - a1
+
+speed = |v|
+if speed < min_speed:
+    return {gated: True, curvature: 0, torsion: 0, helical: 0}
+
+kappa = |v x a| / |v|^3
+tau   = det(v, a, j) / |v x a|^2
+H     = sqrt(kappa^2 + tau^2)
+```
+
+Sprawdzone na tej samej helisie (r=5, c=1, κ=0.192308, τ=0.038462):
+
+| dt | κ | błąd κ | τ | błąd τ |
+|---|---|---|---|---|
+| 0.5 | 0.186416 | 3.06% | 0.039977 | 3.94% |
+| 0.1 | 0.192070 | 0.12% | 0.038521 | 0.15% |
+| 0.02 | 0.192298 | 0.0049% | 0.038464 | 0.0062% |
+| 0.01 | 0.192305 | 0.0012% | 0.038462 | 0.0015% |
+| 0.005 | 0.192307 | 0.0003% | 0.038462 | 0.0004% |
+
+Błąd maleje monotonicznie do ~0 — wzór faktycznie zbiega do prawdziwej
+krzywizny i skrętu.
+
+**Implementacja**: [`the_geo_pro_4d.py`](the_geo_pro_4d.py) —
+prawdziwy, uruchamialny kod Python (nie pseudokod), plus jedna poprawka
+względem oryginalnego pseudokodu: zabezpieczenie przed dzieleniem przez
+zero, gdy `v` i `a` są równoległe (linia prosta) — wtedy `κ=τ=0` zamiast
+błędu/NaN.
+
+**Testy**: [`tests/test_the_geo_pro_4d.py`](tests/test_the_geo_pro_4d.py)
+— 6 testów: zbieżność do wartości analitycznej, brak dzielenia przez
+zero na linii prostej, bramkowanie `min_speed` (zapobiega wzmacnianiu
+szumu GPS/sensora przy postoju), niezmienniczość na obrót 3D wokół
+dowolnej osi (wzór Rodriguesa). Wszystkie przechodzą:
+
+```
+$ python3 -m unittest discover -s tests -v
+...
+Ran 6 tests in 0.005s
+OK
+```
+
+### Zastosowania (już zbudowane i zwalidowane w osobnych repo)
+
+- **[RADAR-TRACKING-TIMDR](https://github.com/jbackk-lang/RADAR-TRACKING-TIMDR)**
+  — wariant 2D (bez skrętu, tylko krzywizna) sprawdzony na prawdziwych
+  danych GPS z 4 przejazdów: korelacja z realnymi manewrami 0.47-0.76
+  (przy bramkowaniu `min_step_m=3.0`) vs -0.08..-0.00 bez bramkowania.
+- **[FLIGHT-TRACKING-TIMDR](https://github.com/jbackk-lang/FLIGHT-TRACKING-TIMDR)**
+  — pełny wariant 3D (ten opisany wyżej) użyty do śledzenia lotu na
+  danych syntetycznych; `the_geo_pro_4d.py` w tym repo jest matematycznie
+  identyczny z `core/curvature_detector_3d.py` w FLIGHT-TRACKING-TIMDR
+  (sprawdzone numerycznie — te same v/a/j dla tych samych wejść), różni
+  się tylko interfejsem (dict zamiast dataclass, dodatkowo liczy `H`).
+
+---
+
+## THE-GEO PRO (oryginalny pseudokod, zachowany dla kontekstu)
+
+Poniższe klasy to oryginalny pseudokod tego repo. `Torsion.compute` jest
+**błędny** — patrz sekcja wyżej. Zachowany tu bez zmian dla
+przejrzystości historii, nie do użycia.
+
+### 1. Delta geometryczna (pełna różniczka)
+```
 class DeltaGeo:
     def compute(p_t, p_t1):
         dx = p_t.x - p_t1.x
         dy = p_t.y - p_t1.y
         dz = p_t.z - p_t1.z
         return (dx, dy, dz)
-🌀 2. Gradient + kierunek
-Kod
+```
+
+### 2. Gradient + kierunek
+```
 class GradientDir:
     def gradient(dx, dy, dz):
         return sqrt(dx*dx + dy*dy + dz*dz)
@@ -134,31 +254,33 @@ class GradientDir:
     def direction(dx, dy, dz, G):
         if G == 0: return (0,0,0)
         return (dx/G, dy/G, dz/G)
-🔄 3. Krzywizna (curvature)
-Zmiana kierunku między dwoma krokami.
+```
 
-Kod
+### 3. Krzywizna (curvature)
+```
 class Curvature:
     def compute(D_t, D_t1, G):
         diff = norm(D_t - D_t1)
         return diff / G
-🧬 4. Skręt (torsion)
-Zmiana płaszczyzny ruchu.
+```
 
-Kod
+### 4. Skręt (torsion) — ⚠️ BŁĘDNY, patrz walidacja wyżej
+```
 class Torsion:
     def compute(D_t2, D_t1, D_t, G):
         cross_vec = cross(D_t2, D_t1)
         return dot(cross_vec, D_t) / (G*G)
-🌀 5. Helikalność (spiralność)
-Połączenie krzywizny i skrętu.
+```
 
-Kod
+### 5. Helikalność (spiralność)
+```
 class Helical:
     def compute(kappa, tau):
         return sqrt(kappa*kappa + tau*tau)
-📈 6. Przepływ geometryczny PRO
-Kod
+```
+
+### 6. Przepływ geometryczny PRO
+```
 class FlowGeo:
     def compute(D, G, kappa, tau):
         return {
@@ -167,8 +289,10 @@ class FlowGeo:
             "curv": kappa,
             "tors": tau
         }
-🧩 7. Stabilność geometryczna PRO
-Kod
+```
+
+### 7. Stabilność geometryczna PRO
+```
 class StabilityGeo:
     def dir_stab(D_t, D_t1):
         return dot(D_t, D_t1)
@@ -184,43 +308,30 @@ class StabilityGeo:
 
     def total(Dstab, Ck, Ct, Ch):
         return Dstab * Ck * Ct * Ch
-🔥 8. THE‑GEO PRO — główna pętla percepcyjna
-To jest cały THE‑GEO PRO w jednym bloku — minimalny, czysty, kompletny.
+```
 
-Kod
+### 8. THE-GEO PRO — główna pętla percepcyjna (oryginalna, z błędnym skrętem)
+```
 def THE_GEO_PRO(p_t, p_t1, p_t2):
-
-    # delta
     dx, dy, dz = DeltaGeo.compute(p_t, p_t1)
-
-    # gradient + kierunek
     G = GradientDir.gradient(dx, dy, dz)
     D_t = GradientDir.direction(dx, dy, dz, G)
 
-    # poprzednie kierunki
     dx1, dy1, dz1 = DeltaGeo.compute(p_t1, p_t2)
     G1 = GradientDir.gradient(dx1, dy1, dz1)
     D_t1 = GradientDir.direction(dx1, dy1, dz1, G1)
 
-    # krzywizna
     kappa = Curvature.compute(D_t, D_t1, G)
 
-    # skręt
-    # potrzebujemy jeszcze D_t2 (kierunek sprzed dwóch kroków)
-    # zakładamy, że p_t2 jest dostępne
-    dx2, dy2, dz2 = DeltaGeo.compute(p_t2, p_t1)  # poprzednia delta
+    dx2, dy2, dz2 = DeltaGeo.compute(p_t2, p_t1)
     G2 = GradientDir.gradient(dx2, dy2, dz2)
     D_t2 = GradientDir.direction(dx2, dy2, dz2, G2)
 
-    tau = Torsion.compute(D_t2, D_t1, D_t, G)
+    tau = Torsion.compute(D_t2, D_t1, D_t, G)   # <- błędny wzór, patrz wyżej
 
-    # helikalność
     H = Helical.compute(kappa, tau)
-
-    # przepływ
     F = FlowGeo.compute(D_t, G, kappa, tau)
 
-    # stabilność
     Dstab = StabilityGeo.dir_stab(D_t, D_t1)
     Ck = StabilityGeo.curv_stab(kappa)
     Ct = StabilityGeo.tors_stab(tau)
@@ -237,305 +348,7 @@ def THE_GEO_PRO(p_t, p_t1, p_t2):
         "flow": F,
         "stability": C
     }
-To jest pełny THE‑GEO PRO kod, gotowy do implementacji w dowolnym języku.
+```
 
-
-##
-🧠 1. Fundamentalna zasada: 2D → 3D NIE MOŻE być deterministyczne
-Jeśli:
-
-Δ
-𝑧
-=
-𝑓
-(
-Δ
-𝑥
-,
-Δ
-𝑦
-)
-to:
-
-Δz nie niesie żadnej nowej informacji,
-
-krzywizna i torsja są zafałszowane,
-
-system nie jest niezmienniczy względem rotacji,
-
-ruch prostoliniowy generuje fałszywe sygnały.
-
-To jest matematycznie nieuniknione.
-
-Dlatego poprawna korelacja 2D→3D musi być probabilistyczna lub percepcyjna, a nie deterministyczna.
-
-🧱 2. THE‑GEO PRO: poprawna zasada korelacji 2D→3D
-Zasada 1: 2D krzywizna pozostaje w 2D
-Krzywizna w 2D jest poprawna, stabilna, niezmiennicza względem rotacji.
-
-𝜅
-2
-𝐷
-=
-∥
-𝐷
-𝑡
-−
-𝐷
-𝑡
-−
-1
-∥
-𝐺
-To działa.
-To jest zwalidowane.
-To jest stabilne.
-
-Zasada 2: 3D pojawia się tylko wtedy, gdy istnieje realna informacja o Z
-Czyli:
-
-radar wysokościowy,
-
-stereo,
-
-lidar,
-
-różnica czasu przelotu,
-
-cienie,
-
-gradient ostrości,
-
-parallax,
-
-cokolwiek, co wnosi nową informację.
-
-Bez tego — nie ma 3D.
-
-Zasada 3: THE nie interpoluje wymiarów
-THE nie zgaduje.
-THE nie „dodaje” wymiarów.
-THE nie tworzy pseudo‑Z.
-
-🌀 3. Poprawna korelacja 2D→3D w THE‑GEO PRO
-Jeśli masz tylko 2D → zostajesz w 2D.
-Jeśli masz 2D + sygnał wysokościowy → robisz 3D.
-To jest jedyna poprawna droga.
-
-🔧 4. Kod: poprawna korelacja 2D→3D (bez degeneracji)
-To jest minimalny, poprawny, stabilny moduł:
-
-Kod
-def THE_GEO_PRO_2D_to_3D(p_t, p_t1, z_t=None, z_t1=None):
-
-    # delta 2D
-    dx = p_t.x - p_t1.x
-    dy = p_t.y - p_t1.y
-
-    # jeśli nie ma realnego Z → zostajemy w 2D
-    if z_t is None or z_t1 is None:
-        dz = 0
-    else:
-        dz = z_t - z_t1
-
-    # gradient
-    G = sqrt(dx*dx + dy*dy + dz*dz)
-
-    # kierunek
-    if G == 0:
-        D = (0,0,0)
-    else:
-        D = (dx/G, dy/G, dz/G)
-
-    return {
-        "delta": (dx, dy, dz),
-        "gradient": G,
-        "direction": D
-    }
-Zero torsji. Zero helikalności. Zero pseudo‑Z. Zero fałszywych sygnałów.
-🧠 THE‑GEO PRO 4D — esencja
-4D = (x, y, z, t)
-
-Nie dodajemy nowej osi przestrzennej.
-Dodajemy czas jako wymiar, który generuje:
-
-prędkość v
-
-przyspieszenie a
-
-szarpnięcie j
-
-krzywiznę κ
-
-torsję τ
-
-stabilność C
-
-przepływ F
-
-To jest pełna percepcja ruchu w czasie.
-
-🧱 1. 4D: krzywa parametryczna p(t)
-Wejście:
-
-𝑝
-(
-𝑡
-)
-=
-(
-𝑥
-(
-𝑡
-)
-,
-𝑦
-(
-𝑡
-)
-,
-𝑧
-(
-𝑡
-)
-)
-Czas jest parametrem krzywej.
-
-🏎️ 2. 4D: prędkość, przyspieszenie, szarpnięcie
-Prędkość:
-
-𝑣
-=
-𝑑
-𝑝
-𝑑
-𝑡
-Przyspieszenie:
-
-𝑎
-=
-𝑑
-𝑣
-𝑑
-𝑡
-Szarpnięcie:
-
-𝑗
-=
-𝑑
-𝑎
-𝑑
-𝑡
-W praktyce — skończone różnice:
-
-Kod
-v  = p_t  - p_t1
-a  = v_t  - v_t1
-j  = a_t  - a_t1
-To jest rdzeń 4D.
-
-🌀 3. 4D: krzywizna
-𝜅
-=
-∥
-𝑣
-×
-𝑎
-∥
-∥
-𝑣
-∥
-3
-To jest jedyny poprawny wzór.
-Zbiega do wartości analitycznej.
-Niezmienniczy względem rotacji 3D.
-
-🔄 4. 4D: torsja
-𝜏
-=
-det
-⁡
-(
-𝑣
-,
-𝑎
-,
-𝑗
-)
-∥
-𝑣
-×
-𝑎
-∥
-2
-To jest jedyny poprawny wzór.
-Zbiega do wartości analitycznej.
-Niezmienniczy względem rotacji 3D.
-
-🧬 5. 4D: helikalność
-𝐻
-=
-𝜅
-2
-+
-𝜏
-2
-To jest percepcyjna miara spiralności.
-
-📉 6. 4D: stabilność
-Próg prędkości:
-
-Kod
-if |v| < min_speed:
-    gated = True
-    kappa = 0
-    tau = 0
-Bez tego — eksplozja szumu.
-To jest absolutnie konieczne.
-
-🔥 7. THE‑GEO PRO 4D — pełny kod percepcyjny
-Minimalny, czysty, poprawny:
-
-Kod
-def THE_GEO_PRO_4D(p_t, p_t1, p_t2, p_t3, min_speed):
-
-    # prędkość
-    v  = p_t  - p_t1
-    v1 = p_t1 - p_t2
-
-    # przyspieszenie
-    a  = v  - v1
-    a1 = v1 - (p_t2 - p_t3)
-
-    # szarpnięcie
-    j = a - a1
-
-    # prędkość (norma)
-    speed = norm(v)
-
-    # bramkowanie
-    if speed < min_speed:
-        return {
-            "gated": True,
-            "curvature": 0.0,
-            "torsion": 0.0,
-            "helical": 0.0
-        }
-
-    # krzywizna
-    cross_va = cross(v, a)
-    kappa = norm(cross_va) / (speed**3)
-
-    # torsja
-    tau = det(v, a, j) / (norm(cross_va)**2)
-
-    # helikalność
-    H = sqrt(kappa*kappa + tau*tau)
-
-    return {
-        "gated": False,
-        "curvature": kappa,
-        "torsion": tau,
-        "helical": H
-    }
-To jest pełny THE‑GEO PRO 4D, zgodny z geometrią różniczkową, stabilny numerycznie, zwalidowany na helisie.
+**Użyj zamiast tego [`the_geo_pro_4d.py`](the_geo_pro_4d.py)** — poprawny,
+przetestowany, zwalidowany na helisie analitycznej.
