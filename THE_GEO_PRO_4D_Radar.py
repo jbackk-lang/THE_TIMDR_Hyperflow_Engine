@@ -1,21 +1,3 @@
-"""
-THE_GEO_PRO_4D_Radar.py
-------------------------
-Poprawiona wersja pliku "THE-GEO PRO 4D Radar" -- oryginalnie wklejony
-tu jako pseudokod (uzywal niezdefiniowanych norm/cross/det, wiec nie
-dalby sie uruchomic) i zawieral ten sam blad co druga poprawka opisana
-w README.md ("Druga poprawka: bramkowanie oparte na cross_norm==0 nie
-wystarcza"): `if cross_norm == 0` chroni tylko przed dzieleniem przez
-doslowne zero, nie przed wzmocnieniem szumu, gdy trajektoria jest
-niemal (ale nie dokladnie) prosta -- np. cross_norm=1e-6 przechodzi
-przez ten warunek i daje torsje rzedu 1e6 zamiast ~0.
-
-Ta wersja jest funkcjonalnie identyczna z the_geo_pro_4d.py w tym repo
-(patrz tam pelna historia walidacji i testy) -- prawdziwy, uruchamialny
-kod Python z poprawionym bramkowaniem torsji na podstawie krzywizny
-kappa zamiast samego cross_norm.
-"""
-
 import math
 from typing import Dict, Tuple
 
@@ -65,8 +47,7 @@ def THE_GEO_PRO_4D_Radar(
 
     speed = _norm(v)
 
-    # bramkowanie predkosci -- przy postoju/wolnym ruchu szum czujnika
-    # jest wzmacniany przez dzielenie przez |v|^3
+    # bramkowanie predkosci
     if speed < min_speed:
         return {"gated": True, "curvature": 0.0, "torsion": 0.0, "helical": 0.0}
 
@@ -75,9 +56,7 @@ def THE_GEO_PRO_4D_Radar(
     cross_norm = _norm(cross_va)
     kappa = cross_norm / speed ** 3
 
-    # bramkowanie torsji -- POPRAWKA: na podstawie kappa, nie
-    # "if cross_norm == 0" (ktore lapie tylko doslowne zero, nie male
-    # nie-zerowe wartosci wynikajace z szumu na niemal prostym torze)
+    # bramkowanie torsji — poprawka: na podstawie kappa
     if kappa < min_curvature:
         tau = 0.0
     else:
