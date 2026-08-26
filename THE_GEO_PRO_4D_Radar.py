@@ -1,68 +1,32 @@
-import math
-from typing import Dict, Tuple
+"""
+THE_GEO_PRO_4D_Radar.py
+-----------------------
+Cienki re-eksport `the_geo_pro_4d.THE_GEO_PRO_4D` pod nazwą użytą w
+pierwotnym pseudokodzie ("...Radar"), żeby NIE było drugiej, niezależnej
+kopii tej samej logiki geometrycznej.
 
-Point3 = Tuple[float, float, float]
+Dlaczego to ma znaczenie: wcześniej ten plik miał WŁASNĄ, zduplikowaną
+implementację — treściowo identyczną z `the_geo_pro_4d.py` (dwa niezależne
+kopiuj-wklej tego samego wzoru), ale bez wspólnego źródła prawdy. Historia
+tego repo (README.md, sekcja "Druga poprawka") już opisuje, że ten
+konkretny plik raz dostał poprawkę bramkowania torsji (na `kappa` zamiast
+`cross_norm == 0`) niezależnie od `the_geo_pro_4d.py` — czyli dokładnie ten
+mechanizm rozjazdu (dwie kopie, jedna naprawiona, druga nie) już się tu
+raz zdarzył. Re-eksport eliminuje możliwość, żeby zdarzył się ponownie:
+jest teraz JEDNO miejsce z implementacją (`the_geo_pro_4d.py`), a ten plik
+tylko je re-eksportuje pod historyczną nazwą.
 
-DEFAULT_MIN_CURVATURE = 1e-4
+Test regresyjny na tożsamość funkcji:
+`tests/test_the_geo_pro_4d_radar.py::test_radar_is_same_function_object`.
 
+Drobna, jawna zmiana zachowania: poprzednio `min_speed` było tu
+wymagane (brak wartości domyślnej), teraz — jako że to ten sam obiekt
+funkcji co `THE_GEO_PRO_4D` — ma domyślną wartość 1.0
+(`the_geo_pro_4d.DEFAULT_MIN_SPEED`). Wywołania z jawnym `min_speed=...`
+działają bez zmian.
+"""
 
-def _sub(a: Point3, b: Point3) -> Point3:
-    return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+from the_geo_pro_4d import THE_GEO_PRO_4D as THE_GEO_PRO_4D_Radar
+from the_geo_pro_4d import DEFAULT_MIN_CURVATURE
 
-
-def _norm(v: Point3) -> float:
-    return math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2)
-
-
-def _cross(a: Point3, b: Point3) -> Point3:
-    return (
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    )
-
-
-def _dot(a: Point3, b: Point3) -> float:
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
-
-
-def THE_GEO_PRO_4D_Radar(
-    p_t: Point3,
-    p_t1: Point3,
-    p_t2: Point3,
-    p_t3: Point3,
-    min_speed: float,
-    min_curvature: float = DEFAULT_MIN_CURVATURE,
-) -> Dict[str, float]:
-    # predkosc
-    v = _sub(p_t, p_t1)
-    v1 = _sub(p_t1, p_t2)
-
-    # przyspieszenie
-    a = _sub(v, v1)
-    a1 = _sub(v1, _sub(p_t2, p_t3))
-
-    # szarpniecie
-    j = _sub(a, a1)
-
-    speed = _norm(v)
-
-    # bramkowanie predkosci
-    if speed < min_speed:
-        return {"gated": True, "curvature": 0.0, "torsion": 0.0, "helical": 0.0}
-
-    # krzywizna
-    cross_va = _cross(v, a)
-    cross_norm = _norm(cross_va)
-    kappa = cross_norm / speed ** 3
-
-    # bramkowanie torsji — poprawka: na podstawie kappa
-    if kappa < min_curvature:
-        tau = 0.0
-    else:
-        tau = _dot(cross_va, j) / cross_norm ** 2
-
-    # helikalnosc
-    H = math.sqrt(kappa * kappa + tau * tau)
-
-    return {"gated": False, "curvature": kappa, "torsion": tau, "helical": H}
+__all__ = ["THE_GEO_PRO_4D_Radar", "DEFAULT_MIN_CURVATURE"]

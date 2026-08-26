@@ -229,9 +229,24 @@ na obrót 3D wokół dowolnej osi (wzór Rodriguesa). Wszystkie przechodzą:
 ```
 $ python3 -m unittest discover -s tests -v
 ...
-Ran 8 tests in 0.020s
+Ran 10 tests in 0.003s
 OK
 ```
+
+### Trzecia poprawka: `THE_GEO_PRO_4D_Radar.py` było drugą, niezależną kopią tego samego wzoru
+
+Znalezione przy pełnej ponownej inspekcji repo: `THE_GEO_PRO_4D_Radar.py`
+miało WŁASNĄ implementację — treściowo identyczną z `the_geo_pro_4d.py`
+(ta sama poprawka bramkowania na `kappa` z sekcji wyżej), ale jako
+osobna kopia kodu, nie import ze wspólnego źródła. To dokładnie ten
+mechanizm, który już raz spowodował błąd opisany w "Druga poprawka" wyżej
+— dwie kopie tej samej logiki, jedna naprawiona niezależnie od drugiej.
+Poprawka: `THE_GEO_PRO_4D_Radar.py` jest teraz cienkim re-eksportem
+(`from the_geo_pro_4d import THE_GEO_PRO_4D as THE_GEO_PRO_4D_Radar`),
+nie osobną implementacją — nie da się już, żeby te dwie nazwy cicho się
+rozjechały. Test regresyjny na tożsamość obiektu funkcji (nie tylko
+"daje ten sam wynik teraz"):
+[`tests/test_the_geo_pro_4d_radar.py`](tests/test_the_geo_pro_4d_radar.py).
 
 ### Zastosowania (już zbudowane i zwalidowane w osobnych repo)
 
@@ -243,8 +258,10 @@ OK
   — pełny wariant 3D (ten opisany wyżej) użyty do śledzenia lotu na
   danych syntetycznych; `the_geo_pro_4d.py` w tym repo jest matematycznie
   identyczny z `core/curvature_detector_3d.py` w FLIGHT-TRACKING-TIMDR
-  (sprawdzone numerycznie — te same v/a/j dla tych samych wejść), różni
-  się tylko interfejsem (dict zamiast dataclass, dodatkowo liczy `H`).
+  (ponownie zweryfikowane numerycznie przy tej inspekcji — 200 losowych
+  zestawów punktów, max różnica |Δkappa|≈4e-17, |Δtau|≈3e-16, czyli
+  szum zaokrągleń zmiennoprzecinkowych, nie realna różnica), różni się
+  tylko interfejsem (dict zamiast dataclass, dodatkowo liczy `H`).
 
 ---
 
