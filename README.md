@@ -248,6 +248,40 @@ rozjechały. Test regresyjny na tożsamość obiektu funkcji (nie tylko
 "daje ten sam wynik teraz"):
 [`tests/test_the_geo_pro_4d_radar.py`](tests/test_the_geo_pro_4d_radar.py).
 
+### Czwarta poprawka: wzmacnianie szumu przy potrójnym różniczkowaniu na realnych/krótkich sekwencjach
+
+Znalezione przy audycie ekosystemu TIMDR pod kątem powtarzalnego wzorca
+błędu ("Pattern A"): `THE_GEO_PRO_4D()` liczy `v/a/j` z **surowych,
+kolejnych** punktów. Na gładkiej, gęsto próbkowanej krzywej analitycznej
+(jak w testach zbieżności wyżej) to zbiega poprawnie. Ale repo siostrzane
+`FLIGHT-TRACKING-TIMDR`, używające matematycznie identycznego wzoru,
+zmierzyło bezpośrednio na zaszumionych danych GPS: surowe różnicowanie
+wzmacnia szum pomiaru 10-40× (`std(tau)≈2.6` przy prawdziwym `tau≈0.065`).
+Niezależnie, `GIA-TIMDR` potwierdziło ten sam mechanizm na krótkich
+(~25-punktowych) realnych szeregach czasowych — krzywizna/torsja z
+surowych różnic stają się nierozróżnialne od szumu.
+
+**Poprawka**: nowa funkcja `THE_GEO_PRO_4D_sequence(points, smooth=True)`
+— dla sekwencji dłuższych niż 4 punkty liczy `v/a/j` **bezpośrednio z
+pochodnych lokalnie dopasowanego wielomianu** (prawdziwy filtr
+różniczkujący Savitzky-Golay, bez zależności od scipy — własna
+eliminacja Gaussa dla równań normalnych najmniejszych kwadratów), nie
+"wygładź pozycje, potem policz proste różnice sąsiadów". **Ta pierwsza,
+prostsza wersja została wypróbowana i odrzucona** — dawała WIĘKSZY błąd
+niż brak wygładzania w ogóle, bo odejmowanie dwóch niezależnie
+dopasowanych, zachodzących na siebie okien nie tłumi szumu wyższych
+pochodnych tak, jak wzięcie pochodnej analitycznie z jednego dopasowania
+na punkt. Zmierzone na zaszumionej helisie: średni błąd `tau` spada
+zauważalnie (test `test_smoothed_sequence_has_lower_tau_error_than_raw`)
+względem surowego różnicowania. `THE_GEO_PRO_4D()` (4-punktowa) pozostaje
+niezmieniona — `smooth=False` w nowej funkcji odtwarza jej stare
+zachowanie dokładnie, dla wstecznej kompatybilności.
+
+**Testy**: [`tests/test_noise_amplification_fix.py`](tests/test_noise_amplification_fix.py)
+— 4 nowe testy (redukcja błędu na zaszumionej helisie, brak regresji na
+czystych danych, dokładna zgodność `smooth=False` ze starym
+zachowaniem, czytelny błąd zamiast `IndexError` przy `polyorder<3`).
+
 ### Zastosowania (już zbudowane i zwalidowane w osobnych repo)
 
 - **[RADAR-TRACKING-TIMDR](https://github.com/jbackk-lang/RADAR-TRACKING-TIMDR)**
