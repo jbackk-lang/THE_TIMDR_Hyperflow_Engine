@@ -14,6 +14,17 @@ poprawki jest opisana w sekcji "THE-GEO PRO → THE-GEO PRO 4D" niżej.
 
 Nie jest to implementacja w żadnym języku — to jest język THE.
 
+to repo dostarcza miary geometryczne, które są idealne do:
+
+wykrywania uskoków,
+wykrywania pęknięć,
+wykrywania nagłych zmian kierunku struktur,
+analizy linii brzegowych, granic pól, krawędzi chmur, frontów,
+analizy wektorowych ścieżek wyciągniętych z obrazu.
+
+Najkrótsze zdanie
+Repo nie jest mapowe, ale jest dokładnie tym, czego używasz, żeby wykrywać uskoki na mapach lub zdjęciach satelitarnych — bo uskok to geometria, a geometria to THE‑GEO PRO 4D.
+
 ## 1. Strumień (S-Layer)
 Strumień nie przechowuje wartości — tylko zmianę.
 
